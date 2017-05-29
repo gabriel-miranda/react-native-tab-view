@@ -9,7 +9,6 @@ import type {
   SceneRendererProps,
   NavigationState,
   Layout,
-  Route,
   SubscriptionName,
   PagerProps,
   Style,
@@ -75,6 +74,9 @@ export default class TabViewAnimated<T: Route<*>>
     renderHeader: PropTypes.func,
     renderFooter: PropTypes.func,
     lazy: PropTypes.bool,
+    style: PropTypes.any,
+    headerStyles: PropTypes.any,
+    absoluteHeader: PropTypes.bool,
   };
 
   static defaultProps = {
@@ -164,9 +166,8 @@ export default class TabViewAnimated<T: Route<*>>
   _getLastPosition = () => {
     if (typeof this._lastPosition === 'number') {
       return this._lastPosition;
-    } else {
-      return this.props.navigationState.index;
     }
+    return this.props.navigationState.index;
   };
 
   _handleLayout = (e: any) => {
@@ -188,16 +189,14 @@ export default class TabViewAnimated<T: Route<*>>
     });
   };
 
-  _buildSceneRendererProps = (): SceneRendererProps<*> => {
-    return {
-      layout: this.state.layout,
-      navigationState: this.props.navigationState,
-      position: this.state.position,
-      jumpToIndex: this._jumpToIndex,
-      getLastPosition: this._getLastPosition,
-      subscribe: this._addSubscription,
-    };
-  };
+  _buildSceneRendererProps = (): SceneRendererProps<*> => ({
+    layout: this.state.layout,
+    navigationState: this.props.navigationState,
+    position: this.state.position,
+    jumpToIndex: this._jumpToIndex,
+    getLastPosition: this._getLastPosition,
+    subscribe: this._addSubscription,
+  })
 
   _jumpToIndex = (index: number) => {
     if (!this._mounted) {
@@ -238,6 +237,12 @@ export default class TabViewAnimated<T: Route<*>>
     }
   };
 
+  _renderHeader = (props) =>
+    this.props.renderHeader &&
+      <Animated.View style={this.props.headerStyles} collapsable={false}>
+        {this.props.renderHeader(props)}
+      </Animated.View>
+
   render() {
     const {
       /* eslint-disable no-unused-vars */
@@ -248,11 +253,13 @@ export default class TabViewAnimated<T: Route<*>>
       lazy,
       initialLayout,
       renderScene,
-      /* eslint-enable no-unused-vars */
       renderPager,
       renderHeader,
       renderFooter,
-      ...rest
+      headerStyles,
+      absoluteHeader,
+      /* eslint-enable no-unused-vars */
+      ...rest,
     } = this.props;
     const props = this._buildSceneRendererProps();
 
@@ -262,7 +269,7 @@ export default class TabViewAnimated<T: Route<*>>
         loaded={this.state.loaded}
         style={[styles.container, this.props.style]}
       >
-        {renderHeader && <View collapsable={false}>{renderHeader(props)}</View>}
+        {!absoluteHeader && this._renderHeader(props)}
         {renderPager({
           ...props,
           ...rest,
@@ -275,6 +282,7 @@ export default class TabViewAnimated<T: Route<*>>
             }),
           ),
         })}
+        {absoluteHeader && this._renderHeader(props)}
         {renderFooter && <View collapsable={false}>{renderFooter(props)}</View>}
       </View>
     );
